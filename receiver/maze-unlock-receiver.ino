@@ -3,48 +3,48 @@
 #include <RF24.h>
 #include <Adafruit_NeoPixel.h>
 
-//create an RF24 object
-RF24 radio(9, 8);  // CE, CSN
+#define MU_PIN_CE 9
+#define MU_PIN_CSN 8
+#define MU_PIN_LED 8
 
-//address through which two modules communicate.
-const byte address[6] = "00001";
+RF24 radio(MU_PIN_CE, MU_PIN_CSN);
 
-Adafruit_NeoPixel LED = Adafruit_NeoPixel(24, 5, NEO_GRB + NEO_KHZ800);
-int zelena, cervena, modra;
+const byte address[6] = "1tran";
+const byte address2[6] = "2tran";
+
+Adafruit_NeoPixel LED = Adafruit_NeoPixel(24, MU_PIN_LED, NEO_GRB + NEO_KHZ800);
+
+int blue = 0, red = 0;
 
 void setup() {
     Serial.begin(9600);
+    delay(100);
 
-//    int val = 0 +  (((digitalRead(7) + 1) % 2) << 0);
-//    Serial.println(val, BIN);
-//    itoa(val, address);
+    if (!radio.begin()) Serial.println("Could not initialize radio!!!"); else Serial.println("Radio initialized");
 
-    radio.begin();
-
-    radio.openReadingPipe(0, address);
+    radio.openReadingPipe(1, address);
+    radio.openReadingPipe(2, address2);
     radio.startListening();
     LED.begin();
 }
 
 void loop() {
-    if (radio.available()) {
+    byte clientId = 0;
+
+    if (radio.available(&clientId)) {
         char text[3] = {0};
         radio.read(&text, sizeof(text));
         int level = atoi(text);
 
-        int ledIndex = map(level, 0, 255, 0, 24);
+//        Serial.print("Sender: ");
+//        Serial.println(clientId);
 
-        Serial.print("LED index: ");
-        Serial.println(ledIndex);
+        if (clientId==1) red = level; else blue = level;
 
-        for (int i = 0; i < ledIndex; i++) {
-            LED.setPixelColor(i, 10, 200, 200);
-            LED.show();
+        for (int i = 0; i < 24; i++) {
+            LED.setPixelColor(i, red, blue, 10);
         }
 
-        for (int i = ledIndex; i < 24; i++) {
-            LED.setPixelColor(i, 0, 0, 0);
-            LED.show();
-        }
+        LED.show();
     }
 }
