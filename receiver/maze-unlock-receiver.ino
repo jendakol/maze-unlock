@@ -170,6 +170,8 @@ void updateClientPhase(int clientId, char *data) {
         Serial.println(reportedPhase);
 
         clientProgress(clientId, reportedPhase);
+
+        if (reportedPhase >= MU_LEDS) finish(clientId);
     }
 }
 
