@@ -20,7 +20,11 @@ const byte address2[6] = "2tran";
 
 Adafruit_NeoPixel LED = Adafruit_NeoPixel(MU_LEDS, MU_PIN_LED, NEO_GRB + NEO_KHZ800);
 
-int scores[2] = {0, 0};
+int phases[2] = {0, 0};
+
+int currentPhase(int clientId) {
+    return phases[clientId-1];
+}
 
 void beep(int length) {
     digitalWrite(MU_PIN_BUZZER, HIGH);
@@ -102,27 +106,27 @@ void setup() {
     LED.show();
 }
 
-int clientProgress(int clientId) {
-    scores[clientId - 1]++;
+int clientProgress(int clientId, int phase) {
+    phases[clientId - 1] = phase;
 
-    int common = min(MU_LEDS, min(scores[0], scores[1]));
+    int common = min(MU_LEDS, min(phases[0], phases[1]));
 
     for (int i = 0; i < common; i++) {
         LED.setPixelColor(i, 0, 255, 255);
     }
 
-    for (int i = common; i < scores[0]; i++) {
+    for (int i = common; i < phases[0]; i++) {
         LED.setPixelColor(i, 0, 255, 0);
     }
 
-    for (int i = common; i < scores[1]; i++) {
+    for (int i = common; i < phases[1]; i++) {
         LED.setPixelColor(i, 0, 0, 255);
     }
 
     LED.show();
     beep(500);
 
-    return scores[clientId - 1];
+    return phases[clientId - 1];
 }
 
 
@@ -156,47 +160,18 @@ void finish(int clientId) {
 #pragma clang diagnostic pop
 }
 
-//void updateLevel(int clientId, char *data) {
-//    int level = atoi(data);
-//
-////        Serial.print("Sender: ");
-////        Serial.println(clientId);
-//
-//    Serial.print("level: ");
-//    Serial.println(level);
-//
-//    if (clientId == 1) red = level; else blue = level;
-//
-//    for (int i = 0; i < MU_LEDS; i++) {
-//        LED.setPixelColor(i, red, blue, 10);
-//    }
-//
-////    switch (clientId) {
-////        case 1:
-////            client1++;
-////            break;
-////        case 2:
-////            client2++;
-////            break;
-////    }
-////
-////
-////    int common = min(MU_LEDS, min(client1, client2));
-////
-////    for (int i = 0; i < common; i++) {
-////        LED.setPixelColor(i, 0, 255, 255);
-////    }
-////
-////    for (int i = common; i < client1; i++) {
-////        LED.setPixelColor(i, 0, 255, 0);
-////    }
-////
-////    for (int i = common; i < client2; i++) {
-////        LED.setPixelColor(i, 0, 0, 255);
-////    }
-//
-//    LED.show();
-//}
+void updateClientPhase(int clientId, char *data) {
+    int reportedPhase = atoi(data);
+
+    if (reportedPhase != currentPhase(clientId) && reportedPhase != 0) {
+        Serial.print("Client ");
+        Serial.print(clientId);
+        Serial.print(" reports phase ");
+        Serial.println(reportedPhase);
+
+        clientProgress(clientId, reportedPhase);
+    }
+}
 
 void loop() {
     byte clientId = 0;
@@ -205,30 +180,37 @@ void loop() {
         char rawData[10] = {0};
         radio.read(&rawData, sizeof(rawData));
 
-//        Serial.println(rawData);
-
         char *data = *(&rawData) + 1;
 
         switch (rawData[0]) {
-            case 'i': {
-                Serial.println("PING");
+            case 's': { // start
+                Serial.print("Start packet from client ");
+                Serial.println(clientId);
+
+                int clientPhase = phases[clientId - 1];
+
+                char ackPayload[3];
+                itoa(clientPhase, ackPayload, 10);
+                Serial.print("Sending back client ");
+                Serial.print(clientId);
+                Serial.print(" phase: ");
+                Serial.println(ackPayload);
+                radio.writeAckPayload(clientId, ackPayload, sizeof(ackPayload));
             }
                 break;
-//            case 'u': {
-//                updateLevel(clientId, data);
-//            }
-//                break;
+            case 'p': { // ping
+                updateClientPhase(clientId, data);
+            }
+                break;
+            case 'i': { // increment
+                int clientPhase = clientProgress(clientId, currentPhase(clientId) + 1);
 
-            case 'p': {
-                int clientScore = clientProgress(clientId);
+                Serial.print("Client ");
+                Serial.print(clientId);
+                Serial.print(" new phase: ");
+                Serial.println(clientPhase);
 
-                if (clientScore >= MU_LEDS) finish(clientId);
-
-//                char ackPayload[3];
-//                itoa(clientScore, ackPayload, 10);
-//                Serial.print("Sending back: ");
-//                Serial.println(ackPayload);
-//                radio.writeAckPayload(clientId, ackPayload, sizeof(ackPayload));
+                if (clientPhase >= MU_LEDS) finish(clientId);
             }
                 break;
 
