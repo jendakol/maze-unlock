@@ -206,10 +206,12 @@ void checkMove(int direction) {
 
     if (direction != expectedDirection) {
         wrongMove();
+        return;
     }
 
     if (inPhaseMoves > expectedMoves) {
         wrongMove();
+        return;
     }
 
     // direction fits, there's still place for move
