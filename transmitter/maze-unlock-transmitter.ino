@@ -70,11 +70,14 @@ int digitalReadPullup(int pin) {
 }
 
 int getChannelNumber(const int *channelPins) {
-    int channel = 0;
-    if (digitalReadPullup(channelPins[0])) channel = bitSet(channel, 1);
-    if (digitalReadPullup(channelPins[1])) channel = bitSet(channel, 2);
-    if (digitalReadPullup(channelPins[2])) channel = bitSet(channel, 3);
-    return MU_CHANNEL_OFFSET + channel;
+//    int channel = 0;
+//    if (digitalReadPullup(channelPins[0])) channel = bitSet(channel, 1);
+//    if (digitalReadPullup(channelPins[1])) channel = bitSet(channel, 2);
+//    if (digitalReadPullup(channelPins[2])) channel = bitSet(channel, 3);
+//    return MU_CHANNEL_OFFSET + channel;
+
+    // TODO fix after wiring
+    return 109;
 }
 
 void initRadio() {
@@ -128,9 +131,8 @@ void setup() {
     pinMode(MU_PIN_LED_GREEN, OUTPUT);
     pinMode(MU_PIN_IDENTITY, INPUT_PULLUP);
 
-    int identitySwitch = digitalReadPullup(MU_PIN_IDENTITY) << 0;
-
-    Serial.println(identitySwitch == HIGH ? "ClientId: 2" : "ClientId: 1");
+    int identitySwitch = digitalReadPullup(MU_PIN_IDENTITY);
+    Serial.println(digitalReadPullup(MU_PIN_IDENTITY) == HIGH ? "ClientId: 2" : "ClientId: 1");
 
     initRadio();
 
