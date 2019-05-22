@@ -254,21 +254,6 @@ void endPhase() {
 void loop() {
     int moveDirection = readMoveDirection();
 
-//    switch (moveDirection) {
-//        case MU_MOVE_UP:
-//            Serial.println("up");
-//            break;
-//        case MU_MOVE_DOWN:
-//            Serial.println("down");
-//            break;
-//        case MU_MOVE_LEFT:
-//            Serial.println("left");
-//            break;
-//        case MU_MOVE_RIGHT:
-//            Serial.println("right");
-//            break;
-//    }
-
     switch (moveDirection) {
         case MU_MOVE_NONE:
             if (digitalRead(MU_PIN_JOY_BUTTON) == LOW) {

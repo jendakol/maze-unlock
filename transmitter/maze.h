@@ -5,5 +5,6 @@
 #define MU_MOVE_RIGHT 2
 #define MU_MOVE_DOWN 3
 #define MU_MOVE_LEFT 4
+#define MU_PHASES 24 * 4
 
 #endif //MAZE_UNLOCK_TRANSMITTER_MAZE_H

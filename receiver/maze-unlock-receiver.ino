@@ -1,3 +1,6 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "hicpp-multiway-paths-covered"
+
 #include <Arduino.h>
 #include <SPI.h>
 #include <RF24.h>
@@ -12,6 +15,12 @@
 #define MU_PINS_CHANNEL {A0, A1, A2}
 #define MU_LEDS 24
 #define MU_LED_ANIM_DELAY 40
+#define MU_PHASES_MULT 4
+#define MU_MAX_PHASES MU_LEDS * MU_PHASES_MULT
+#define MU_COLOR_RED Adafruit_NeoPixel::Color(0, 255, 0)
+#define MU_COLOR_BLUE Adafruit_NeoPixel::Color(0, 0, 255)
+#define MU_COLOR_COMBINED Adafruit_NeoPixel::Color(0, 255, 255)
+#define MU_COLOR_NONE Adafruit_NeoPixel::Color(0, 0, 0)
 
 RF24 radio(MU_PIN_CE, MU_PIN_CSN);
 
@@ -23,7 +32,7 @@ Adafruit_NeoPixel LED = Adafruit_NeoPixel(MU_LEDS, MU_PIN_LED, NEO_GRB + NEO_KHZ
 int phases[2] = {0, 0};
 
 int currentPhase(int clientId) {
-    return phases[clientId-1];
+    return phases[clientId - 1];
 }
 
 void beep(int length) {
@@ -89,7 +98,7 @@ void setup() {
     radio.printDetails();
     Serial.println();
 
-    LED.setBrightness(20);
+    LED.setBrightness(10); // TODO make higher when prod
     LED.show();
 
     for (int i = 0; i < MU_LEDS; i++) {
@@ -106,24 +115,120 @@ void setup() {
     LED.show();
 }
 
+void drawBlinking(int ledIndex, int level, uint32_t color) {
+    int drawPhase = (millis() % 2000) / 250;
+
+    switch (drawPhase) {
+        case 0: {
+            // all levels on
+            LED.setPixelColor(ledIndex, color);
+        }
+            break;
+        case 1: {
+            if (level == 3) {
+                LED.setPixelColor(ledIndex, MU_COLOR_NONE);
+            }
+        }
+            break;
+        case 2: {
+            switch (level) {
+                case 2:
+                    LED.setPixelColor(ledIndex, MU_COLOR_NONE);
+                    break;
+                case 3:
+                    LED.setPixelColor(ledIndex, color);
+                    break;
+            }
+        }
+            break;
+        case 3: {
+
+            if (level == 3) {
+                LED.setPixelColor(ledIndex, MU_COLOR_NONE);
+            }
+        }
+            break;
+        case 4: {
+            switch (level) {
+                case 1:
+                    LED.setPixelColor(ledIndex, MU_COLOR_NONE);
+                    break;
+                case 2:
+                case 3:
+                    LED.setPixelColor(ledIndex, color);
+                    break;
+            }
+        }
+            break;
+        case 5: {
+            if (level == 3) {
+                LED.setPixelColor(ledIndex, MU_COLOR_NONE);
+            }
+        }
+            break;
+        case 6: {
+            switch (level) {
+                case 2:
+                    LED.setPixelColor(ledIndex, MU_COLOR_NONE);
+                    break;
+                case 3:
+                    LED.setPixelColor(ledIndex, color);
+                    break;
+            }
+        }
+            break;
+        case 7: {
+            if (level == 3) {
+                LED.setPixelColor(ledIndex, MU_COLOR_NONE);
+            }
+        }
+            break;
+    }
+}
+
+void drawProgress() {
+    int common = min(phases[0], phases[1]);
+
+    int commonFull = common / MU_PHASES_MULT;
+    int commonRestLevel = common % MU_PHASES_MULT;
+
+    int client1Full = phases[0] / MU_PHASES_MULT;
+    int client1RestLevel = phases[0] % MU_PHASES_MULT;
+
+    int client2Full = phases[1] / MU_PHASES_MULT;
+    int client2RestLevel = phases[1] % MU_PHASES_MULT;
+
+
+    // switch on common full
+    for (int i = 0; i < commonFull; i++) {
+        LED.setPixelColor(i, MU_COLOR_COMBINED);
+    }
+
+    // switch on client1 full
+    for (int i = commonFull + (commonRestLevel > 0 ? 1 : 0); i < client1Full; i++) { // skip the first which if it's incomplete common
+        LED.setPixelColor(i, MU_COLOR_RED);
+    }
+
+    // switch on client2 full
+    for (int i = commonFull + (commonRestLevel > 0 ? 1 : 0); i < client2Full; i++) { // skip the first which if it's incomplete common
+        LED.setPixelColor(i, MU_COLOR_BLUE);
+    }
+
+    // skip the drawing for the worse
+    if (client1Full > client2Full) {
+        if (client1RestLevel > 0) drawBlinking(client1Full, client1RestLevel, MU_COLOR_RED);
+    } else {
+        if (client2RestLevel > 0) drawBlinking(client2Full, client2RestLevel, MU_COLOR_BLUE);
+    }
+
+    if (commonRestLevel > 0) drawBlinking(commonFull, commonRestLevel, MU_COLOR_COMBINED);
+
+    LED.show();
+}
+
 int clientProgress(int clientId, int phase) {
     phases[clientId - 1] = phase;
 
-    int common = min(MU_LEDS, min(phases[0], phases[1]));
-
-    for (int i = 0; i < common; i++) {
-        LED.setPixelColor(i, 0, 255, 255);
-    }
-
-    for (int i = common; i < phases[0]; i++) {
-        LED.setPixelColor(i, 0, 255, 0);
-    }
-
-    for (int i = common; i < phases[1]; i++) {
-        LED.setPixelColor(i, 0, 0, 255);
-    }
-
-    LED.show();
     beep(500);
 
     return phases[clientId - 1];
@@ -171,16 +276,20 @@ void updateClientPhase(int clientId, char *data) {
 
         clientProgress(clientId, reportedPhase);
 
-        if (reportedPhase >= MU_LEDS) finish(clientId);
+        if (reportedPhase >= MU_MAX_PHASES) finish(clientId);
     }
 }
 
 void loop() {
     byte clientId = 0;
 
+    drawProgress();
+
     if (radio.available(&clientId)) {
         char rawData[10] = {0};
         radio.read(&rawData, sizeof(rawData));
+
+        drawProgress();
 
         char *data = *(&rawData) + 1;
 
@@ -198,10 +307,13 @@ void loop() {
                 Serial.print(" phase: ");
                 Serial.println(ackPayload);
                 radio.writeAckPayload(clientId, ackPayload, sizeof(ackPayload));
+
+                drawProgress();
             }
                 break;
             case 'p': { // ping
                 updateClientPhase(clientId, data);
+                drawProgress();
             }
                 break;
             case 'i': { // increment
@@ -212,7 +324,7 @@ void loop() {
                 Serial.print(" new phase: ");
                 Serial.println(clientPhase);
 
-                if (clientPhase >= MU_LEDS) finish(clientId);
+                if (clientPhase >= MU_MAX_PHASES) finish(clientId); else drawProgress();
             }
                 break;
 
@@ -223,3 +335,5 @@ void loop() {
         }
     }
 }
+
+#pragma clang diagnostic pop
