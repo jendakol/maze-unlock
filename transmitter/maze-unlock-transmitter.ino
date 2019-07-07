@@ -19,6 +19,8 @@
 
 #define MU_MOVE_NONE 0
 
+#define BUZZER_ENABLED false
+
 RF24 radio(MU_PIN_CE, MU_PIN_CSN);
 
 const byte address[6] = "1tran";
@@ -41,26 +43,26 @@ void blinkGreen(int length) {
 }
 
 void beep(int length) {
-    digitalWrite(MU_PIN_BUZZER, HIGH);
+    if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, HIGH);
     delay(length);
-    digitalWrite(MU_PIN_BUZZER, LOW);
+    if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, LOW);
     delay(10);
 }
 
 void beepAndBlinkRed(int length) {
-    digitalWrite(MU_PIN_BUZZER, HIGH);
+    if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, HIGH);
     digitalWrite(MU_PIN_LED_RED, HIGH);
     delay(length);
-    digitalWrite(MU_PIN_BUZZER, LOW);
+    if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, LOW);
     digitalWrite(MU_PIN_LED_RED, LOW);
     delay(10);
 }
 
 void beepAndBlinkGreen(int length) {
-    digitalWrite(MU_PIN_BUZZER, HIGH);
+    if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, HIGH);
     digitalWrite(MU_PIN_LED_GREEN, HIGH);
     delay(length);
-    digitalWrite(MU_PIN_BUZZER, LOW);
+    if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, LOW);
     digitalWrite(MU_PIN_LED_GREEN, LOW);
     delay(10);
 }
@@ -70,14 +72,11 @@ int digitalReadPullup(int pin) {
 }
 
 int getChannelNumber(const int *channelPins) {
-//    int channel = 0;
-//    if (digitalReadPullup(channelPins[0])) channel = bitSet(channel, 1);
-//    if (digitalReadPullup(channelPins[1])) channel = bitSet(channel, 2);
-//    if (digitalReadPullup(channelPins[2])) channel = bitSet(channel, 3);
-//    return MU_CHANNEL_OFFSET + channel;
-
-    // TODO fix after wiring
-    return 109;
+    int channel = 0;
+    if (digitalReadPullup(channelPins[0])) channel = bitSet(channel, 1);
+    if (digitalReadPullup(channelPins[1])) channel = bitSet(channel, 2);
+    if (digitalReadPullup(channelPins[2])) channel = bitSet(channel, 3);
+    return MU_CHANNEL_OFFSET + channel;
 }
 
 void initRadio() {
@@ -101,7 +100,7 @@ void sendStartPacket() {
             Serial.println(ackPayload);
         }
 
-        beep(15);
+        beepAndBlinkGreen(15);
         delay(400);
     } else {
         Serial.println("Could not sent start packet!");
@@ -206,6 +205,8 @@ void checkMove(int direction) {
     int expectedDirection = mazeMoves[phase][0];
     int expectedMoves = mazeMoves[phase][1];
 
+    inPhaseMoves++;
+
     if (direction != expectedDirection) {
         wrongMove();
         return;
@@ -219,7 +220,6 @@ void checkMove(int direction) {
     // direction fits, there's still place for move
 
     beep(30);
-    inPhaseMoves++;
 
     Serial.print("Phase ");
     Serial.print(phase);
