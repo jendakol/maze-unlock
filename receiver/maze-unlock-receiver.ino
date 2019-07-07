@@ -8,11 +8,13 @@
 #include <printf.h>
 
 #define MU_CHANNEL_OFFSET 105
-#define MU_PIN_CE 9
-#define MU_PIN_CSN 8
-#define MU_PIN_LED 5
-#define MU_PIN_BUZZER 6
-#define MU_PINS_CHANNEL {A0, A1, A2}
+#define MU_PIN_CE 10
+#define MU_PIN_CSN 2
+#define MU_PIN_LEDS A2
+#define MU_PIN_LED_RED A0
+#define MU_PIN_LED_GREEN A1
+#define MU_PIN_BUZZER 3
+#define MU_PINS_CHANNEL {6, 5, 4}
 #define MU_LEDS 24
 #define MU_LED_ANIM_DELAY 40
 #define MU_PHASES_MULT 4
@@ -22,12 +24,15 @@
 #define MU_COLOR_COMBINED Adafruit_NeoPixel::Color(0, 255, 255)
 #define MU_COLOR_NONE Adafruit_NeoPixel::Color(0, 0, 0)
 
+#define BUZZER_ENABLED true
+#define LED_BRIGHTNESS 10 // TODO change when prod
+
 RF24 radio(MU_PIN_CE, MU_PIN_CSN);
 
 const byte address[6] = "1tran";
 const byte address2[6] = "2tran";
 
-Adafruit_NeoPixel LED = Adafruit_NeoPixel(MU_LEDS, MU_PIN_LED, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel LED = Adafruit_NeoPixel(MU_LEDS, MU_PIN_LEDS, NEO_GRB + NEO_KHZ800);
 
 int phases[2] = {0, 0};
 
@@ -35,10 +40,44 @@ int currentPhase(int clientId) {
     return phases[clientId - 1];
 }
 
-void beep(int length) {
-    digitalWrite(MU_PIN_BUZZER, HIGH);
+void blinkRed(int length) {
+    digitalWrite(MU_PIN_LED_RED, HIGH);
     delay(length);
-    digitalWrite(MU_PIN_BUZZER, LOW);
+    digitalWrite(MU_PIN_LED_RED, LOW);
+
+    delay(10);
+}
+
+void blinkGreen(int length) {
+    digitalWrite(MU_PIN_LED_GREEN, HIGH);
+    delay(length);
+    digitalWrite(MU_PIN_LED_GREEN, LOW);
+
+    delay(10);
+}
+
+void beep(int length) {
+    if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, HIGH);
+    delay(length);
+    if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, LOW);
+    delay(10);
+}
+
+void beepAndBlinkRed(int length) {
+    if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, HIGH);
+    digitalWrite(MU_PIN_LED_RED, HIGH);
+    delay(length);
+    if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, LOW);
+    digitalWrite(MU_PIN_LED_RED, LOW);
+    delay(10);
+}
+
+void beepAndBlinkGreen(int length) {
+    if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, HIGH);
+    digitalWrite(MU_PIN_LED_GREEN, HIGH);
+    delay(length);
+    if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, LOW);
+    digitalWrite(MU_PIN_LED_GREEN, LOW);
     delay(10);
 }
 
@@ -79,6 +118,10 @@ void setup() {
     pinMode(channelPins[1], INPUT_PULLUP);
     pinMode(channelPins[2], INPUT_PULLUP);
 
+    pinMode(MU_PIN_BUZZER, OUTPUT);
+    pinMode(MU_PIN_LED_RED, OUTPUT);
+    pinMode(MU_PIN_LED_GREEN, OUTPUT);
+
     initRadio();
 
     radio.setAutoAck(true);
@@ -98,7 +141,7 @@ void setup() {
     radio.printDetails();
     Serial.println();
 
-    LED.setBrightness(10); // TODO make higher when prod
+    LED.setBrightness(LED_BRIGHTNESS);
     LED.show();
 
     for (int i = 0; i < MU_LEDS; i++) {
@@ -113,6 +156,8 @@ void setup() {
         LED.setPixelColor(i, 0, 0, 0);
     }
     LED.show();
+
+    beepAndBlinkGreen(15);
 }
 
 void drawBlinking(int ledIndex, int level, uint32_t color) {
