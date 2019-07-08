@@ -15,6 +15,7 @@
 #define MU_PIN_BUZZER 6
 #define MU_PIN_LED_RED 5
 #define MU_PIN_LED_GREEN 4
+#define MU_PIN_BUTTON 10
 #define MU_PINS_CHANNEL {A0, A1, A2}
 
 #define MU_MOVE_NONE 0
@@ -129,6 +130,8 @@ void setup() {
     pinMode(MU_PIN_LED_RED, OUTPUT);
     pinMode(MU_PIN_LED_GREEN, OUTPUT);
     pinMode(MU_PIN_IDENTITY, INPUT_PULLUP);
+
+    pinMode(MU_PIN_BUTTON, INPUT_PULLUP);
 
     int identitySwitch = digitalReadPullup(MU_PIN_IDENTITY);
     Serial.println(digitalReadPullup(MU_PIN_IDENTITY) == HIGH ? "ClientId: 2" : "ClientId: 1");
