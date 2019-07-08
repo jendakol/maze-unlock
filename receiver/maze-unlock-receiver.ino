@@ -46,23 +46,18 @@ void blinkRed(int length) {
     digitalWrite(MU_PIN_LED_RED, HIGH);
     delay(length);
     digitalWrite(MU_PIN_LED_RED, LOW);
-
-    delay(10);
 }
 
 void blinkGreen(int length) {
     digitalWrite(MU_PIN_LED_GREEN, HIGH);
     delay(length);
     digitalWrite(MU_PIN_LED_GREEN, LOW);
-
-    delay(10);
 }
 
 void beep(int length) {
     if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, HIGH);
     delay(length);
     if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, LOW);
-    delay(10);
 }
 
 void beepAndBlinkRed(int length) {
@@ -71,7 +66,6 @@ void beepAndBlinkRed(int length) {
     delay(length);
     if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, LOW);
     digitalWrite(MU_PIN_LED_RED, LOW);
-    delay(10);
 }
 
 void beepAndBlinkGreen(int length) {
@@ -127,7 +121,7 @@ void setup() {
     radio.enableAckPayload();
     radio.enableDynamicPayloads();
     radio.setDataRate(RF24_250KBPS);
-    radio.setRetries(10, 15);
+    radio.setRetries(15, 15);
     radio.setPALevel(RF24_PA_MAX);
 
     int channel = getChannelNumber(channelPins);
@@ -273,7 +267,7 @@ void drawProgress() {
 int clientProgress(int clientId, int phase) {
     phases[clientId - 1] = phase;
 
-    beep(500);
+    beep(15);
 
     return phases[clientId - 1];
 }
@@ -358,6 +352,7 @@ void loop() {
             case 'p': { // ping
                 updateClientPhase(clientId, data);
                 drawProgress();
+                blinkGreen(2);
             }
                 break;
             case 'i': { // increment
