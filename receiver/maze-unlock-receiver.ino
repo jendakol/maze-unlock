@@ -7,6 +7,8 @@
 #include <Adafruit_NeoPixel.h>
 #include <printf.h>
 
+//přidat RST button
+
 #define MU_CHANNEL_OFFSET 105
 #define MU_PIN_CE 10
 #define MU_PIN_CSN 2
@@ -86,14 +88,11 @@ int digitalReadPullup(int pin) {
 }
 
 int getChannelNumber(const int *channelPins) {
-//    int channel = 0;
-//    if (digitalReadPullup(channelPins[0])) channel = bitSet(channel, 1);
-//    if (digitalReadPullup(channelPins[1])) channel = bitSet(channel, 2);
-//    if (digitalReadPullup(channelPins[2])) channel = bitSet(channel, 3);
-//    return MU_CHANNEL_OFFSET + channel;
-
-    // TODO fix after wiring
-    return 109;
+    int channel = 0;
+    if (digitalReadPullup(channelPins[0])) channel = bitSet(channel, 1);
+    if (digitalReadPullup(channelPins[1])) channel = bitSet(channel, 2);
+    if (digitalReadPullup(channelPins[2])) channel = bitSet(channel, 3);
+    return MU_CHANNEL_OFFSET + channel;
 }
 
 void initRadio() {
