@@ -252,14 +252,25 @@ void drawProgress() {
         LED.setPixelColor(i, MU_COLOR_BLUE);
     }
 
-    // skip the drawing for the worse
-    if (client1Full > client2Full) {
-        if (client1RestLevel > 0) drawBlinking(client1Full, client1RestLevel, MU_COLOR_RED);
+    if (client1Full == client2Full) {
+        if (client1RestLevel > 0 && client2RestLevel > 0) {
+            drawBlinking(commonFull, max(client1RestLevel, client2RestLevel), MU_COLOR_COMBINED);
+        } else {
+            if (client1RestLevel > 0) {
+                drawBlinking(commonFull, client1RestLevel, MU_COLOR_RED);
+            } else {
+                if (client2RestLevel > 0) drawBlinking(commonFull, client2RestLevel, MU_COLOR_BLUE);
+            }
+        }
     } else {
-        if (client2RestLevel > 0) drawBlinking(client2Full, client2RestLevel, MU_COLOR_BLUE);
-    }
+        if (client1Full > client2Full) {
+            if (client1RestLevel > 0) drawBlinking(client1Full, client1RestLevel, MU_COLOR_RED);
+        } else {
+            if (client2RestLevel > 0) drawBlinking(client2Full, client2RestLevel, MU_COLOR_BLUE);
+        }
 
-    if (commonRestLevel > 0) drawBlinking(commonFull, commonRestLevel, MU_COLOR_COMBINED);
+        if (commonRestLevel > 0) drawBlinking(commonFull, commonRestLevel, MU_COLOR_COMBINED);
+    }
 
     LED.show();
 }
