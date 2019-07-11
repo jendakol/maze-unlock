@@ -27,6 +27,9 @@ RF24 radio(MU_PIN_CE, MU_PIN_CSN);
 const byte address[6] = "1tran";
 const byte address2[6] = "2tran";
 
+int missedPings = 0;
+long nextPing = 0;
+
 void blinkRed(int length) {
     digitalWrite(MU_PIN_LED_RED, HIGH);
     delay(length);
@@ -142,7 +145,7 @@ void setup() {
     radio.enableAckPayload();
     radio.enableDynamicPayloads();
     radio.setDataRate(RF24_250KBPS);
-    radio.setRetries(10, 15);
+    radio.setRetries(15, 15);
     radio.setPALevel(RF24_PA_MAX);
 
     int channel = getChannelNumber(channelPins);
@@ -201,7 +204,7 @@ void wrongMove() {
     delay(100);
 
     inPhaseMoves = 0;
-    // TODO count errors
+    // TODO block the progress for a while
 }
 
 void checkMove(int direction) {
@@ -257,27 +260,23 @@ void endPhase() {
 void loop() {
     int moveDirection = readMoveDirection();
 
-    switch (moveDirection) {
-        case MU_MOVE_NONE:
-            if (digitalRead(MU_PIN_JOY_BUTTON) == LOW) {
-                endPhase();
-                delay(400);
-            }
-
-            break;
-
-        default:
-            checkMove(moveDirection);
+    if (moveDirection == MU_MOVE_NONE) {
+        if (digitalRead(MU_PIN_JOY_BUTTON) == LOW) {
+            endPhase();
             delay(400);
+        }
+    } else {
+        checkMove(moveDirection);
+        delay(400);
     }
 
-    if ((millis() / 100) % 10 == 0) {
+    if (millis() >= nextPing) {
         char rawData[10] = "p";
         char *data = *(&rawData) + 1;
         itoa(phase, data, 10);
 
         if (radio.write(&rawData, sizeof(rawData))) {
-            blinkGreen(30);
+            blinkGreen(10);
 
             if (radio.isAckPayloadAvailable()) {
                 char ackPayload[3];
@@ -287,16 +286,23 @@ void loop() {
                 Serial.println(phase);
             }
 
+            missedPings = 0;
         } else {
-            Serial.println("Could not sent ping!");
-            beep(100);
-            blinkRed(50);
-            beep(100);
-            blinkRed(50);
-            beep(300);
-            blinkRed(50);
+            missedPings++;
+            Serial.print("Could not sent ping, missed ");
+            Serial.println(missedPings);
+
+            if (missedPings >= 2) {
+                digitalWrite(MU_PIN_LED_RED, HIGH);
+                beep(80);
+                delay(50);
+                beep(80);
+                delay(50);
+                beep(250);
+                digitalWrite(MU_PIN_LED_RED, LOW);
+            }
         }
 
-        delay(100);
+        nextPing = millis() + random(950, 1050); // next in 950-1050ms
     }
 }
