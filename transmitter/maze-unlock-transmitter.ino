@@ -22,6 +22,8 @@
 
 #define BUZZER_ENABLED false
 
+#define MORSE_UNIT 100
+
 RF24 radio(MU_PIN_CE, MU_PIN_CSN);
 
 const byte address[6] = "1tran";
@@ -34,23 +36,18 @@ void blinkRed(int length) {
     digitalWrite(MU_PIN_LED_RED, HIGH);
     delay(length);
     digitalWrite(MU_PIN_LED_RED, LOW);
-
-    delay(10);
 }
 
 void blinkGreen(int length) {
     digitalWrite(MU_PIN_LED_GREEN, HIGH);
     delay(length);
     digitalWrite(MU_PIN_LED_GREEN, LOW);
-
-    delay(10);
 }
 
 void beep(int length) {
     if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, HIGH);
     delay(length);
     if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, LOW);
-    delay(10);
 }
 
 void beepAndBlinkRed(int length) {
@@ -59,7 +56,6 @@ void beepAndBlinkRed(int length) {
     delay(length);
     if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, LOW);
     digitalWrite(MU_PIN_LED_RED, LOW);
-    delay(10);
 }
 
 void beepAndBlinkGreen(int length) {
@@ -68,12 +64,9 @@ void beepAndBlinkGreen(int length) {
     delay(length);
     if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, LOW);
     digitalWrite(MU_PIN_LED_GREEN, LOW);
-    delay(10);
 }
 
-int digitalReadPullup(int pin) {
-    return (digitalRead(pin) + 1) % 2;
-}
+int digitalReadPullup(int pin) { return (digitalRead(pin) + 1) % 2; }
 
 int getChannelNumber(const int *channelPins) {
     int channel = 0;
@@ -257,7 +250,59 @@ void endPhase() {
     }
 }
 
+void beepDot() { beepAndBlinkGreen(MORSE_UNIT); }
+
+void beepDash() { beepAndBlinkGreen(MORSE_UNIT * 3); }
+
+void beepNumber(int dots1, int dashes, int dots2) {
+    if (dots1 > 0)
+        for (int i = 0; i < dots1; ++i) {
+            beepDot();
+            delay(MORSE_UNIT);
+        }
+
+    if (dashes > 0)
+        for (int i = 0; i < 5; ++i) {
+            beepDash();
+            delay(MORSE_UNIT);
+        }
+
+    if (dots2 > 0)
+        for (int i = 0; i < dots2; ++i) {
+            beepDot();
+            delay(MORSE_UNIT);
+        }
+
+    delay(MORSE_UNIT);
+    delay(MORSE_UNIT);
+}
+
+void beepNumber(int n) {
+    if (n == 0) {
+        beepNumber(0, 5, 0);
+    } else if (n <= 5) {
+        beepNumber(n, 5 - n, 0);
+    } else {
+        beepNumber(0, n - 5, 5 - (n - 5));
+    }
+}
+
+void beepCurrentPhase() {
+    String p = String(phase);
+
+    beepNumber(p.charAt(0) - '0');
+
+    if (p.length() > 1) {
+        beepNumber(p.charAt(1) - '0');
+    }
+}
+
 void loop() {
+    if (digitalReadPullup(MU_PIN_BUTTON) == HIGH) {
+        beepCurrentPhase();
+        delay(1000);
+    }
+
     int moveDirection = readMoveDirection();
 
     if (moveDirection == MU_MOVE_NONE) {
