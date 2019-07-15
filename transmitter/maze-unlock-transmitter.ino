@@ -20,9 +20,9 @@
 
 #define MU_MOVE_NONE 0
 
-#define BUZZER_ENABLED false
+#define BUZZER_ENABLED true
 
-#define MORSE_UNIT 100
+#define MORSE_UNIT 200
 
 RF24 radio(MU_PIN_CE, MU_PIN_CSN);
 
@@ -64,6 +64,16 @@ void beepAndBlinkGreen(int length) {
     delay(length);
     if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, LOW);
     digitalWrite(MU_PIN_LED_GREEN, LOW);
+}
+
+void beepAndBlinkOrange(int length) {
+    if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, HIGH);
+    digitalWrite(MU_PIN_LED_GREEN, HIGH);
+    digitalWrite(MU_PIN_LED_RED, HIGH);
+    delay(length);
+    if (BUZZER_ENABLED) digitalWrite(MU_PIN_BUZZER, LOW);
+    digitalWrite(MU_PIN_LED_GREEN, LOW);
+    digitalWrite(MU_PIN_LED_RED, LOW);
 }
 
 int digitalReadPullup(int pin) { return (digitalRead(pin) + 1) % 2; }
@@ -156,8 +166,8 @@ void setup() {
 int readMoveDirection() {
     int valueX = map((int) fabs(analogRead(MU_PIN_JOY_X)), 0, 1023, 0, 255);
 
-    if (valueX > 200) return MU_MOVE_LEFT;
-    if (valueX < 55) return MU_MOVE_RIGHT;
+    if (valueX > 200) return MU_MOVE_RIGHT;
+    if (valueX < 55) return MU_MOVE_LEFT;
 
     int valueY = map((int) fabs(analogRead(MU_PIN_JOY_Y)), 0, 1023, 0, 255);
 
@@ -250,29 +260,33 @@ void endPhase() {
     }
 }
 
-void beepDot() { beepAndBlinkGreen(MORSE_UNIT); }
+void beepDot() { beepAndBlinkOrange(MORSE_UNIT); }
 
-void beepDash() { beepAndBlinkGreen(MORSE_UNIT * 3); }
+void beepDash() { beepAndBlinkOrange(MORSE_UNIT * 3); }
 
 void beepNumber(int dots1, int dashes, int dots2) {
     if (dots1 > 0)
         for (int i = 0; i < dots1; ++i) {
+            Serial.print(".");
             beepDot();
             delay(MORSE_UNIT);
         }
 
     if (dashes > 0)
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < dashes; ++i) {
+            Serial.print("_");
             beepDash();
             delay(MORSE_UNIT);
         }
 
     if (dots2 > 0)
         for (int i = 0; i < dots2; ++i) {
+            Serial.print(".");
             beepDot();
             delay(MORSE_UNIT);
         }
 
+    Serial.println("|");
     delay(MORSE_UNIT);
     delay(MORSE_UNIT);
 }
