@@ -7,8 +7,6 @@
 #include <Adafruit_NeoPixel.h>
 #include <printf.h>
 
-//přidat RST button
-
 #define MU_CHANNEL_OFFSET 105
 #define MU_PIN_CE 10
 #define MU_PIN_CSN 2
@@ -27,7 +25,7 @@
 #define MU_COLOR_NONE Adafruit_NeoPixel::Color(0, 0, 0)
 
 #define BUZZER_ENABLED true
-#define LED_BRIGHTNESS 10 // TODO change when prod
+#define LED_BRIGHTNESS 255
 
 RF24 radio(MU_PIN_CE, MU_PIN_CSN);
 
